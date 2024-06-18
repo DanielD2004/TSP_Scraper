@@ -15,35 +15,25 @@ ON CONFLICT(id) DO NOTHING;
 `
 
 const retrieveGameIdsQuery = `
-    SELECT id FROM tsp_games;
+    SELECT * FROM tsp_games WHERE id = $1;
 `
 
 async function run() {
     try {
         await client.connect();
         const data = await getData();
-        const allIds = await client.query(retrieveGameIdsQuery)
         
-
         for (let game of data) {
             let gameid = `${game.Date}/${game.Time}/${game.VenueName}`
-            let obj = allIds.rows.find(o => o.id === gameid)
-                if (obj == undefined){
-                    const values = [
-                        gameid,
-                        parseDate(game.Date),
-                        game.Time,
-                        game.VenueName,
-                        game.HomeTeamName,
-                        game.HomeScore,
-                        game.AwayTeamName,
-                        game.AwayScore
-                    ];
-                    const res = await client.query(insertScoreQuery, values);
-                    sendMessage(game)
-                }
-        }
-        
+            const rowid = await client.query(retrieveGameIdsQuery, [gameid])
+            if (rowid.rows[0] == undefined){
+                await makeNewRow(game, gameid)
+                continue;
+            }    
+            if (((rowid.rows[0].id == gameid) && (game.HomeScore != rowid.rows[0].homescore)) || ((rowid.rows[0].id == gameid) && (game.AwayScore != rowid.rows[0].awayscore))){
+                await makeNewRow(game, gameid)
+            }
+    }    
     } catch (err) {
         console.error(err);
     } finally {
@@ -56,6 +46,21 @@ function parseDate(dateString) {
     const fullDateString = `${currentYear} ${dateString}`;
     const parsedDate = new Date(fullDateString);
     return parsedDate;
+}
+
+async function makeNewRow(game, gameid){
+    const values = [
+        gameid,
+        parseDate(game.Date),
+        game.Time,
+        game.VenueName,
+        game.HomeTeamName,
+        game.HomeScore,
+        game.AwayTeamName,
+        game.AwayScore
+    ];
+    const res = await client.query(insertScoreQuery, values);
+    sendMessage(game)
 }
 
 async function sendMessage(game) {
