@@ -67,7 +67,7 @@ async function sendMessage(game) {
     } else {
         message = `${game.AwayTeamName} tied with ${game.HomeTeamName} ${game.AwayScore}-${game.HomeScore}`
     }
-    let response = await axios.post('http://ntfy.gdplace.home.arpa/Tsp_Games', message, {
+    let response = await axios.post('https://ntfy.sh/Mixed2024TSP_Games', message, {
         headers: {
             'Title': 'NEW MIXED SCORE',
             'Tags': 'softball',
