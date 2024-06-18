@@ -31,7 +31,7 @@ async function run() {
                 continue;
             }    
             if (((rowid.rows[0].id == gameid) && (game.HomeScore != rowid.rows[0].homescore)) || ((rowid.rows[0].id == gameid) && (game.AwayScore != rowid.rows[0].awayscore))){
-                await makeNewRow(game, gameid)
+                await makeNewRow(game, gameid, `changed`)
             }
     }    
     } catch (err) {
@@ -48,7 +48,7 @@ function parseDate(dateString) {
     return parsedDate;
 }
 
-async function makeNewRow(game, gameid){
+async function makeNewRow(game, gameid, change=0){
     const values = [
         gameid,
         parseDate(game.Date),
@@ -60,10 +60,16 @@ async function makeNewRow(game, gameid){
         game.AwayScore
     ];
     const res = await client.query(insertScoreQuery, values);
-    sendMessage(game)
+
+    // if changed, pass in argument to change message
+    if (change == `changed`){
+        sendMessage(game, change)
+        return;
+    }
+    sendMessage(game);
 }
 
-async function sendMessage(game) {
+async function sendMessage(game, change=0) {
     let message;
     if (game.HomeScore > game.AwayScore) {
         message = `${game.HomeTeamName} beat ${game.AwayTeamName} ${game.HomeScore}-${game.AwayScore}`
@@ -71,6 +77,9 @@ async function sendMessage(game) {
         message = `${game.AwayTeamName} beat ${game.HomeTeamName} ${game.AwayScore}-${game.HomeScore}`
     } else {
         message = `${game.AwayTeamName} tied with ${game.HomeTeamName} ${game.AwayScore}-${game.HomeScore}`
+    }
+    if (change == `changed`){
+        message = `Score Changed: Sun ${game.Date} ${game.Time} at ${game.VenueName} - New Score is ${game.HomeTeamName} ${game.HomeScore}-${game.AwayScore} ${game.AwayTeamName}`
     }
     let response = await axios.post('https://ntfy.sh/Mixed2024TSP_Games', message, {
         headers: {
