@@ -9,13 +9,13 @@ const dbConfig = dbInfo
 const client = new Client(dbConfig);
 
 const insertScoreQuery = `
-INSERT INTO tsp_games (id, date, time, venueName, homeTeamName, homeScore, awayTeamName, awayScore)
+INSERT INTO tsp_mixed (id, date, time, venueName, homeTeamName, homeScore, awayTeamName, awayScore)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 ON CONFLICT(id) DO NOTHING;
 `
 
 const retrieveGameIdsQuery = `
-    SELECT * FROM tsp_games WHERE id = $1;
+    SELECT * FROM tsp_mixed WHERE id = $1;
 `
 
 async function run() {
