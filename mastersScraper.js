@@ -8,6 +8,7 @@ const dbConfig = dbInfo
 
 const client = new Client(dbConfig);
 
+
 const insertScoreQuery = `
 INSERT INTO tsp_masters (id, date, time, venueName, homeTeamName, homeScore, awayTeamName, awayScore)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
@@ -18,22 +19,29 @@ const retrieveGameIdsQuery = `
     SELECT * FROM tsp_masters WHERE id = $1;
 `
 
+
+const updateRowQuery = `
+    UPDATE tsp_masters
+    SET date = $2, time = $3, venueName = $4, homeTeamName = $5, homeScore = $6, awayTeamName = $7, awayScore = $8
+    WHERE id = $1;
+`
+
 async function run() {
     try {
         await client.connect();
         const data = await getData();
-        
+
         for (let game of data) {
             let gameid = `${game.Date}/${game.Time}/${game.VenueName}`
             const rowid = await client.query(retrieveGameIdsQuery, [gameid])
-            if (rowid.rows[0] == undefined){
+            if (rowid.rows[0] == undefined) {
                 await makeNewRow(game, gameid)
                 continue;
-            }    
-            if (((rowid.rows[0].id == gameid) && (game.HomeScore != rowid.rows[0].homescore)) || ((rowid.rows[0].id == gameid) && (game.AwayScore != rowid.rows[0].awayscore))){
+            }
+            if (((rowid.rows[0].id == gameid) && (game.HomeScore != rowid.rows[0].homescore)) || ((rowid.rows[0].id == gameid) && (game.AwayScore != rowid.rows[0].awayscore))) {
                 await makeNewRow(game, gameid, `changed`)
             }
-    }    
+        }
     } catch (err) {
         console.error(err);
     } finally {
@@ -48,7 +56,7 @@ function parseDate(dateString) {
     return parsedDate;
 }
 
-async function makeNewRow(game, gameid, change=0){
+async function makeNewRow(game, gameid, change = 0) {
     const values = [
         gameid,
         parseDate(game.Date),
@@ -62,8 +70,9 @@ async function makeNewRow(game, gameid, change=0){
     const res = await client.query(insertScoreQuery, values);
 
     // if changed, pass in argument to change message
-    if (change == `changed`){
-        sendMessage(game, change)
+    if (change == `changed`) {
+        await client.query(updateRowQuery, values);
+        sendMessage(game, change);
         return;
     }
     sendMessage(game);
@@ -83,7 +92,7 @@ async function sendMessage(game, change=0) {
     }
     let response = await axios.post('https://ntfy.sh/Masters2024TSP_Games', message, {
         headers: {
-            'Title': 'NEW Masters SCORE',
+            'Title': 'NEW MASTERS SCORE',
             'Tags': 'softball',
             'Content-Type': 'text/plain',
             'Priority': 'urgent',
