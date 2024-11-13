@@ -1,0 +1,1 @@
+This was a project I made to scrape the scores of all games in a night for my local softball league. Using node red, ntfy and a local postgresql database, any new scores are scraped, added to the database and sent out as notifications to the proper ntfy channel
